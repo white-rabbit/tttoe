@@ -45,27 +45,29 @@ class TicTacToe(object):
 
         
     
-    def obvious_info(self, player_index, pos_index, prev_stencils_bmask):
+    def obvious_info(self, player_index, pos_index, prev_stencils_bmasks = None):
         """
         Obvious information about some position by using stencils.
 
         Parameters
         ----------
         player_index  (int):   Player index.
-        pos_index  (int):   Position index.
-        stencil_bmask (int):   Bitmask of available stencils.
+        pos_index  (int):      Position index.
+        stencil_bmask (list):  List of available stencils bitmasks for first and second player. Two integer values.
+                               For example value [1, 128] is in binary notation [00000001, 10000000].
         
         Returns
-
         ----------
-
+        (int) strength for current player
+        (list) list of two integer values : bitmask for first and second players that
         """
+        if prev_stencils_bmasks is None: prev_stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
         pos_mask = canonical_representation(decimal_to_mask(pos_index))
 
         position_strength_for_player = UNKNOWN
         wining_count = [0, 0]
 
-        stencils_bmask = deepcopy(prev_stencils_bmask)
+        stencils_bmask = deepcopy(prev_stencils_bmasks)
         common_bmask = stencils_bmask[0] | stencils_bmask[1]
 
         for i, stencil in enumerate(STENCILS):
@@ -103,9 +105,10 @@ class TicTacToe(object):
         return strength_for_current_player, stencils_bmask
 
 
-    def calc_position_strength(self, player_index, pos_index, prev_stencils_bmask):
+    def calc_position_strength(self, player_index, pos_index, prev_stencils_bmasks = None):
+        if prev_stencils_bmasks is None: prev_stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
         if self.pos_strength[player_index, pos_index] == UNKNOWN:
-            strength, stencils_bmask = self.obvious_info(player_index, pos_index, prev_stencils_bmask)
+            strength, stencils_bmask = self.obvious_info(player_index, pos_index, prev_stencils_bmasks = prev_stencils_bmasks)
             if strength != UNKNOWN:
                 self.pos_strength[player_index, pos_index] = strength
                 return strength
@@ -123,7 +126,7 @@ class TicTacToe(object):
                         ways_count += 1
 
                         tttoe_mask_next = tttoe_mask[:i] + player_label + tttoe_mask[i + 1:]
-                        this_way_enemy_strength = self.calc_position_strength(enemy_index, mask_to_decimal(tttoe_mask_next), stencils_bmask)
+                        this_way_enemy_strength = self.calc_position_strength(enemy_index, mask_to_decimal(tttoe_mask_next), prev_stencils_bmasks = stencils_bmask)
 
                         if this_way_enemy_strength == UNKNOWN or this_way_enemy_strength is None:
                             die('Something strange happened : UNKNOWN returns')
@@ -193,6 +196,10 @@ def main():
     player = X_PLAYER
     while True:
         if player == X_PLAYER:
+            print 'Player X.'
+        else:
+            print 'Player O.'
+        if player == X_PLAYER:
             x = input() - 1
             y = input() - 1
 
@@ -202,8 +209,10 @@ def main():
 
             if current_mask[index] == ' ':
                 next_mask = current_mask[:index] + 'X' + current_mask[index + 1:]
-
-            game.set_position(mask_to_decimal(next_mask))
+                game.set_position(mask_to_decimal(next_mask))
+            else:
+                print('Wrong position! There is %s label in %dx%d position now.' % (current_mask[index], x + 1, y + 1))
+                continue
         else:
             game.current_pos = game.best_way(player, game.current_pos)
         print '_____'
@@ -211,7 +220,7 @@ def main():
         print '_____'
         player = (player + 1) % 2
 
-        status, _ = game.obvious_info(player, game.current_pos, [DEFAULT_STENCILS, DEFAULT_STENCILS])
+        status, _ = game.obvious_info(player, game.current_pos)
 
         if status == LOSING_FINAL:
             if player == O_PLAYER:
