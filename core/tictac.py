@@ -274,7 +274,6 @@ class TicTacToe(object):
 def main():
     game = TicTacToe('        ')
     game.show()
-
     player = X_PLAYER
     while True:
         if player == X_PLAYER:
@@ -282,10 +281,12 @@ def main():
         else:
             print 'Player O.'
         if player == X_PLAYER:
-            x = input() - 1
-            y = input() - 1
+            x = input('Type x (from 1 to 3) and press Enter\n') - 1
+            y = input('Type y (from 1 to 3) and press Enter\n') - 1
 
             index = x * 3 + y
+            if index < 0 or index > 8:
+                continue
             current_pos = game.current_pos
             current_mask = tttoe_representation(decimal_to_mask(current_pos))
 
