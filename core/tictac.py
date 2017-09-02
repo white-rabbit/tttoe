@@ -6,6 +6,8 @@ from copy import deepcopy
 
 # internal imports:
 from utils import *
+import stencil
+import ternary
 from ternary import POS_COUNT, E_IND, X_IND, O_IND
 from ternary import decimal_to_mask, mask_to_decimal, canonical_representation, tttoe_representation
 from bitop import bit_up, bit_down, is_up
@@ -21,10 +23,7 @@ LOSING_FINAL = 4
 IMPOSSIBLE = 5
 
 # Stencils of winning positions.
-STENCILS  = [[0,1,2], [3,4,5], [6, 7, 8]] # 0) !!!|...|... 1) ...|!!!|... 2) ...|...|!!!
-STENCILS += [[0,3,6], [1,4,7], [2, 5, 8]] # 3) !..|!..|!.. 4) .!.|.!.|.!. 5) ..!|..!|..!
-STENCILS += [[0,4,8], [2,4,6]]            # 6) !..|!..|!.. 7) .!.|.!.|.!.
-DEFAULT_STENCILS = 2**len(STENCILS) - 1
+
 
 # Players.
 X_PLAYER = 0
@@ -36,15 +35,14 @@ class TicTacToeException(Exception):
         super(TicTacToeException, self).__init__(message)
 
 class TicTacToe(object):
-    def __init__(self, start_pos):
-        if isinstance(start_pos, str):
-            start_pos = mask_to_decimal(start_pos)
-        self.current_pos = start_pos
+    def __init__(self, field_width):
+        self.field_width = field_width
+        self.current_pos = 0
         # strength of all available positions
-        # initially UNKNOWN
-        self.pos_strength = numpy.zeros((2, POS_COUNT), numpy.int16) - 1
+        self.pos_strength = [dict(), dict()]
+        self.stencils = stencil.generate(field_width)
+        self.default_stencil = 2**len(self.stencils) - 1
 
-        
     
     def status(self, player_index, pos_index, prev_stencils_bmasks = None):
         """
@@ -66,7 +64,7 @@ class TicTacToe(object):
         (int) strength for current player
         (list) list of two integer values : bitmasks for the first and the second players after checking.
         """
-        if prev_stencils_bmasks is None: prev_stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
+        if prev_stencils_bmasks is None: prev_stencils_bmasks = [self.default_stencil, self.default_stencil]
         pos_mask = canonical_representation(decimal_to_mask(pos_index))
 
         # initial value of position strength for current player
@@ -82,7 +80,7 @@ class TicTacToe(object):
         # common bitmask of first and second players
         common_bmask = stencils_bmask[0] | stencils_bmask[1]
 
-        for i, stencil in enumerate(STENCILS):
+        for i, stencil in enumerate(self.stencils):
 
             if is_up(common_bmask, i):
 
@@ -136,7 +134,7 @@ class TicTacToe(object):
         ----------
         (dict) available moves - dictionary that collecting lists of masks for strength values. 
         """
-        if stencils_bmasks is None: stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
+        if stencils_bmasks is None: stencils_bmasks = [self.default_stencil, self.default_stencil]
         # Internal representation of current position.
         tttoe_mask = tttoe_representation(decimal_to_mask(pos_index))
         player_label = 'X' if player_index == X_PLAYER else 'O'
@@ -144,7 +142,7 @@ class TicTacToe(object):
         # Total count of moves
         moves = dict()
 
-        for i in xrange(9):
+        for i in xrange(len(tttoe_mask)):
             if tttoe_mask[i] == ' ':
                 # A mask for the next move.
                 tttoe_mask_next = tttoe_mask[:i] + player_label + tttoe_mask[i + 1:]
@@ -171,8 +169,9 @@ class TicTacToe(object):
         (int) position strength for current player.
         """
         # setting default value for both stencils
-        if prev_stencils_bmasks is None: prev_stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
-        if self.pos_strength[player_index, pos_index] == UNKNOWN:
+
+        if prev_stencils_bmasks is None: prev_stencils_bmasks = [self.default_stencil, self.default_stencil]
+        if not pos_index in self.pos_strength[player_index]:
             # If this position was not checked before..
 
             # Check all available stencils.
@@ -180,7 +179,7 @@ class TicTacToe(object):
             
             if strength != UNKNOWN:
                 # If value is not UNKNOWN just give it.
-                self.pos_strength[player_index, pos_index] = strength
+                self.pos_strength[player_index][pos_index] = strength
                 return strength
             else:
                 # Otherwise we must to check all available moves.
@@ -196,20 +195,20 @@ class TicTacToe(object):
 
                 if count_of(LOSING) > 0 or count_of(LOSING_FINAL) > 0:
                     # If there are some moves to the enemy losing, this position is winning.
-                    self.pos_strength[player_index, pos_index] = WINNING
+                    self.pos_strength[player_index][pos_index] = WINNING
                 elif count_of(WINNING) > 0 or count_of(WINNING_FINAL) > 0:
                     # Otherwise the enemy can winning if there is no moves to dead hit.
                     if count_of(DEAD_HIT) == 0:
-                        self.pos_strength[player_index, pos_index] = LOSING
+                        self.pos_strength[player_index][pos_index] = LOSING
                     else:
-                        self.pos_strength[player_index, pos_index] = DEAD_HIT
+                        self.pos_strength[player_index][pos_index] = DEAD_HIT
                 else:
                     # If there are no moves to winning someone - dead hit
-                    self.pos_strength[player_index, pos_index] = DEAD_HIT
+                    self.pos_strength[player_index][pos_index] = DEAD_HIT
 
-                return self.pos_strength[player_index, pos_index]
+                return self.pos_strength[player_index][pos_index]
         else:
-            return self.pos_strength[player_index, pos_index]
+            return self.pos_strength[player_index][pos_index]
 
 
     def best_way(self, player_index, pos_index):
@@ -227,11 +226,24 @@ class TicTacToe(object):
         """
 
 
-        stencils_bmasks = [DEFAULT_STENCILS, DEFAULT_STENCILS]
+        stencils_bmasks = [self.default_stencil, self.default_stencil]
        
         player_label = 'X' if player_index == X_PLAYER else 'O'
         tttoe_mask = tttoe_representation(decimal_to_mask(pos_index))
         enemy_index = (player_index + 1) % 2
+
+        # first four position will filled randomly
+        # it can lead to bad moves for AI (used for keeping speed)
+        # TODO: something better need :(
+        if self.field_width == 4:
+            empty = []
+            for i, c in enumerate(tttoe_mask):
+                if c == ' ': empty.append(i)
+            if len(empty) > 12:
+                i = empty[randint(0, len(empty) - 1)]
+                tttoe_mask_next = tttoe_mask[:i] + player_label + tttoe_mask[i + 1:]
+                return mask_to_decimal(tttoe_mask_next)
+
 
         strength = self.calc_position_strength(player_index, pos_index, stencils_bmasks)
         moves = self.available_moves(player_index, pos_index, stencils_bmasks = stencils_bmasks)
@@ -267,12 +279,22 @@ class TicTacToe(object):
         The text output for the current position.
         """
         pos_mask = tttoe_representation(decimal_to_mask(self.current_pos))
-        for (start, end) in [(0, 3), (3, 6), (6, 9)]:
-            print pos_mask[start:end]
-        
+        for line_index in xrange(self.field_width):
+            print pos_mask[line_index * self.field_width: (line_index + 1) * self.field_width]
+    
+    def end(self):
+        tttoe_mask = tttoe_representation(decimal_to_mask(self.current_pos))
+        return tttoe_mask.count(' ') == 0
+
 
 def main():
-    game = TicTacToe('        ')
+    FW = -1
+    while FW != 3 and FW != 4:
+        FW = input('Enter the width of the field. Only values 3 and 4 allowed in the current version.\n')
+
+    ternary.set_field_width(FW)    
+    game = TicTacToe(FW)
+
     game.show()
     player = X_PLAYER
     while True:
@@ -281,11 +303,11 @@ def main():
         else:
             print 'Player O.'
         if player == X_PLAYER:
-            x = input('Type x (from 1 to 3) and press Enter\n') - 1
-            y = input('Type y (from 1 to 3) and press Enter\n') - 1
+            x = input('Type x (from 1 to %d) and press Enter\n' % game.field_width) - 1
+            y = input('Type y (from 1 to %d) and press Enter\n' % game.field_width) - 1
 
-            index = x * 3 + y
-            if index < 0 or index > 8:
+            index = x * game.field_width + y
+            if index < 0 or index > game.field_width ** 2 - 1:
                 continue
             current_pos = game.current_pos
             current_mask = tttoe_representation(decimal_to_mask(current_pos))
@@ -299,21 +321,26 @@ def main():
         else:
             game.current_pos = game.best_way(player, game.current_pos)
 
-        if game.current_pos == -1:
-            print 'Dead hit.'
-            break
-        else:
+
+        if not game.current_pos == -1:
             print '_____'
             game.show()
             print '_____'
-            player = (player + 1) % 2
-            status, _ = game.status(player, game.current_pos)
-            if status == LOSING_FINAL:
-                if player == O_PLAYER:
-                    print 'X player win.'
-                else:
-                    print 'O player win.'
-                break
+
+
+        player = (player + 1) % 2
+        status, _ = game.status(player, game.current_pos)
+        if status == LOSING_FINAL:
+            if player == O_PLAYER:
+                print 'X player win.'
+            else:
+                print 'O player win.'
+            break
+        elif game.end():
+            print 'Dead hit!'
+            break
+        else:
+            continue
 
 
 if __name__=='__main__':

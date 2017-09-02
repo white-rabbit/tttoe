@@ -1,8 +1,17 @@
 # Special functions for ternary notation operations.
 
 BASE = 3
-MASK_WIDTH = 9
+FIELD_WIDTH = 4
+MASK_WIDTH = FIELD_WIDTH**2
 POS_COUNT = BASE**MASK_WIDTH
+
+
+# very very bad solution (I just want to sleep)
+def set_field_width(fw):
+    global FIELD_WIDTH, MASK_WIDTH, POS_COUNT
+    FIELD_WIDTH = fw
+    MASK_WIDTH = FIELD_WIDTH**2
+    POS_COUNT = BASE**MASK_WIDTH
 
 DIGITS_MAP = {
     '0' : ' ',
@@ -56,7 +65,7 @@ def main():
     global DIGITS_MAP
     from random import randint
     trep_mask = ''
-    for i in xrange(9):
+    for i in xrange(MASK_WIDTH):
         trep_mask += DIGITS_MAP[str(randint(0, 2))]
 
     print 'tic-tac-toe representation :', trep_mask
