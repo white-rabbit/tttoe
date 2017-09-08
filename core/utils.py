@@ -21,8 +21,5 @@ def memoized_by_uid(some_class_method):
         else:
             value = some_class_method(self, *args, **kwargs)
             memory[uid] = value
-            if len(memory) % 1000 == 0:
-                print len(memory)
-            if len(memory) > 5e6: raise GameBoardException('Memory limit')
             return value
     return wrapped

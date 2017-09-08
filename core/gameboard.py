@@ -1,4 +1,4 @@
-from bitop import BinaryFilter
+from bifilter import BinaryFilter
 from utils import enum, memoized_by_uid
 
 BASE = 3
@@ -14,7 +14,7 @@ class GameBoardException(Exception):
 
 
 class GameBoard(object):
-    def __init__(self, board_width):
+    def __init__(self, board_height, board_width):
         """
         Game board.
 
@@ -22,19 +22,20 @@ class GameBoard(object):
         ----------
         board_width  (int):   tic tac toe board width.
         """
+        self.board_height = board_height
         self.board_width = board_width
         # width of text mask
-        self.tmask_width = board_width**2
+        self.tmask_width = board_height * board_width
         # maximal count of game board states
         self.pos_count = BASE**self.tmask_width
         # the current position in the text representation
         self.position = ' ' * self.tmask_width
         # stencils for winning position checking
-        self.stencils = self.__make_stencils(board_width)
+        self.stencils = self.__make_stencils(board_height, board_width)
         # Bitmask of allowed stencils, default is 11111..111 - checking of all stencils make sense
         self.default_stencils_filter = BinaryFilter(len(self.stencils))
 
-    def __make_stencils(self, board_width):
+    def __make_stencils(self, board_height, board_width):
         """
         This method makes winning position stencils.
 
@@ -46,63 +47,31 @@ class GameBoard(object):
         ----------
         (list) list of stencil indicies.
         """
-
+        winning_len = min(board_height, board_width)
+        delta = max(board_height, board_width) - winning_len + 1
+        
+        indexar = []
         rows = []
-        for i in xrange(board_width):
-            rows.append(range(i * board_width, (i + 1) * board_width))
+        for i in xrange(board_height):
+            indexar.append(range(i * board_width, (i + 1) * board_width))
+            for shift in xrange(0, board_width - winning_len + 1):
+                rows.append(range(i * board_width + shift, i * board_width + winning_len + shift))
 
         cols = []
         for i in xrange(board_width):
-            cols.append(map(lambda x : x[i], rows))
+            for shift in xrange(0, board_height - winning_len + 1):
+                cols.append(map(lambda x : x[i], indexar[shift:shift + winning_len]))
 
-        diags = [[], []]
-        for i in xrange(board_width):
-            diags[0].append(rows[i][i])
-            diags[1].append(rows[board_width - i - 1][i])
+
+        diags = [[] for _ in xrange(2 * delta)]
+        for shift in xrange(delta):
+            for i in xrange(winning_len):
+                shift_i, shift_j = (shift, 0) if board_height > winning_len else (0, shift)
+                diags[shift * 2].append(indexar[i + shift_i][i + shift_j])
+                diags[shift * 2 + 1].append(indexar[board_height - shift_i - i - 1][i + shift_j])
 
         return rows + cols + diags
 
-
-    def player_label(self, position):
-        """
-        This method determines the label of the current player by position.
-
-        Parameters
-        ----------
-        position  (str):   a position in the text representation
-
-        Returns
-        ----------
-        (str) X or O label for the next moving player in the position
-        """
-        count_X = position.count(X_LABEL)
-        count_O = position.count(O_LABEL)
-        if count_X == count_O:
-            return 'X'
-        elif count_O + 1 == count_X:
-            return 'O'
-        else:
-            raise GameBoardException('Position is not possible. X label count = %d and O label count = %d.' % (count_X, count_O))
-
-    def update_position(self, i, j):
-        """
-        Update position on game board.
-
-        Parameters
-        ----------
-        i  (int):            the first coordinate.
-        j  (int):            the second coordinate.
-        player_label (str) : the label of player
-        """
-        if 0 <= i < self.board_width and 0 <= j < self.board_width:
-            if self.position[index] == ' ':
-                self.position = self.position[:index] + symbol + self.position[index + 1:]
-            else:
-                raise GameBoardException("Wrong position indicies: the label %s is already in the position (%d, %d)" % (self.posisition[index], i, j))
-        else:
-            raise GameBoardException('Wrong position indicies: %d and %d must be in range [0,%d]' % (i, j, self.board_width - 1))
-
-    
     def __status(self, position, stencils_filter = None):
         """
         Obvious information about some position by using stencils.
@@ -177,6 +146,62 @@ class GameBoard(object):
             raise GameBoardException(message)
 
         return strength_for_current_player, new_stencils_filter
+
+    def player_label(self, position):
+        """
+        This method determines the label of the current player by position.
+
+        Parameters
+        ----------
+        position  (str):   a position in the text representation
+
+        Returns
+        ----------
+        (str) X or O label for the next moving player in the position
+        """
+        count_X = position.count(X_LABEL)
+        count_O = position.count(O_LABEL)
+        if count_X == count_O:
+            return 'X'
+        elif count_O + 1 == count_X:
+            return 'O'
+        else:
+            raise GameBoardException('Position is not possible. X label count = %d and O label count = %d.' % (count_X, count_O))
+
+    def inside_board(self, i, j):
+        return 0 <= i < self.board_height and 0 <= j < self.board_width
+
+    def index_position(self, i, j):
+        return i * self.board_width + j
+
+    def empty_position(self, i, j):
+        return self.position[self.index_position(i, j)] == ' '
+
+    def update_position(self, i, j):
+        """
+        Update position on game board.
+
+        Parameters
+        ----------
+        i  (int):            the first coordinate.
+        j  (int):            the second coordinate.
+        player_label (str) : the label of player
+        """
+        if self.inside_board(i, j):
+            index = self.index_position(i, j)
+            player_label = self.player_label(self.position)
+            if self.position[index] == ' ':
+                self.position = self.position[:index] + player_label + self.position[index + 1:]
+            else:
+                m_mask = "Wrong position indicies: the label %s is already in the position (%d, %d)"
+                message = m_mask % (self.position[index], i, j)
+                raise GameBoardException()
+        else:
+            m_mask = 'Wrong position indicies: %d and %d must be in ranges [0,%d] and [0, %d]'
+            message = m_mask % (i, j, self.board_height - 1, self.board_width - 1)
+            raise GameBoardException(message)
+
+    
         
     def unique_id(self, position):
         """ 
@@ -269,29 +294,29 @@ class GameBoard(object):
                 strength = STATUS.DEAD_HIT
 
             return strength
-       
+
+    def status(self):
+        status = self.__status(self.position)
+        player_label = self.player_label(self.position)
+        enemy_label = 'X' if player_label == 'O' else 'O'
+
+        if status[0] == STATUS.LOSING_FINAL:
+            print enemy_label, 'Player win'
+        elif status[0] == STATUS.WINNING_FINAL:
+            print player_label, 'Player win'
+        elif status[0] == STATUS.DEAD_HIT:
+            print 'DRAW'
+        else:
+            print 'GAME'
+    def game_over(self):
+        if self.position.count(' ') == 0:
+            return True
+        else:
+            status = self.__status(self.position)
+            return status[0] in [STATUS.LOSING_FINAL, STATUS.WINNING_FINAL]
 
 def main():
-    gb = GameBoard(4)
-
-    print gb.position_strength(gb.position)
+    gb = GameBoard(3, 3)
     
-
-    import sys
-    sys.exit()
-    global DIGITS_MAP
-    from random import randint
-    trep_mask = ''
-    for i in xrange(MASK_WIDTH):
-        trep_mask += DIGITS_MAP[str(randint(0, 2))]
-
-    print 'tic-tac-toe representation :', trep_mask
-    print 'canonical representation :', canonical_representation(trep_mask)
-    print 'idempotency :', tttoe_representation(canonical_representation(trep_mask)) == trep_mask
-
-    print 'decimal from ttoe representation :', mask_to_decimal(trep_mask)
-    print 'decimal from canonical representation :', mask_to_decimal(canonical_representation(trep_mask))
-    print 'idempotency :', canonical_representation(trep_mask) == decimal_to_mask(mask_to_decimal(trep_mask))
-
 if __name__=='__main__':
     main()

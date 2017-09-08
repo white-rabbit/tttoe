@@ -1,5 +1,4 @@
-# Basic bitwise operations
-
+#
 class BinaryFilterException(Exception):
     def __init__(self, message):
         super(BinaryFilterException, self).__init__(message)
