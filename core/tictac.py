@@ -16,8 +16,7 @@ class TicTacToe(object):
         player_index = 0
         self.show()
         while not self.game_board.game_over():
-            i, j = self.players[player_index].move(self.game_board)
-            self.game_board.update_position(i, j)
+            self.players[player_index].move(self.game_board)
             player_index = (player_index + 1) % 2
             self.show()
 
@@ -29,10 +28,12 @@ class TicTacToe(object):
         The text output for the current position.
         """
         gb = self.game_board
-        print '-----'
+        print ' -----'
         for line_index in xrange(gb.board_height):
-            print gb.position[line_index * gb.board_width: (line_index + 1) * gb.board_width]
-        print '-----'
+            print '|',
+            print gb.position[line_index * gb.board_width: (line_index + 1) * gb.board_width],
+            print '|'
+        print ' -----'
 
 def main():
     width, height = -1, -1

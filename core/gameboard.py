@@ -5,7 +5,7 @@ BASE = 3
 LABELS = " XO"
 E_LABEL, X_LABEL, O_LABEL = LABELS
 
-STATUS = enum('DEAD_HIT', 'WINNING', 'LOSING', 'WINNING_FINAL', 'LOSING_FINAL', 'IMPOSSIBLE', 'UNKNOWN')
+STATUS = enum('DRAW', 'WINNING', 'LOSING', 'WINNING_FINAL', 'LOSING_FINAL', 'IMPOSSIBLE', 'UNKNOWN')
 
 
 class GameBoardException(Exception):
@@ -129,7 +129,7 @@ class GameBoard(object):
         total_winings = sum(wining_count)
         if total_winings == 0:
             if new_stencils_filter.empty():
-                strength_for_current_player = STATUS.DEAD_HIT
+                strength_for_current_player = STATUS.DRAW
             else:
                 strength_for_current_player = STATUS.UNKNOWN
         elif total_winings > 0:
@@ -177,7 +177,7 @@ class GameBoard(object):
     def empty_position(self, i, j):
         return self.position[self.index_position(i, j)] == ' '
 
-    def update_position(self, i, j):
+    def update_position(self, I, J):
         """
         Update position on game board.
 
@@ -187,6 +187,7 @@ class GameBoard(object):
         j  (int):            the second coordinate.
         player_label (str) : the label of player
         """
+        i, j = I - 1, J - 1
         if self.inside_board(i, j):
             index = self.index_position(i, j)
             player_label = self.player_label(self.position)
@@ -194,11 +195,17 @@ class GameBoard(object):
                 self.position = self.position[:index] + player_label + self.position[index + 1:]
             else:
                 m_mask = "Wrong position indicies: the label %s is already in the position (%d, %d)"
-                message = m_mask % (self.position[index], i, j)
-                raise GameBoardException()
+                message = m_mask % (self.position[index], I, J)
+                raise GameBoardException(message)
         else:
-            m_mask = 'Wrong position indicies: %d and %d must be in ranges [0,%d] and [0, %d]'
-            message = m_mask % (i, j, self.board_height - 1, self.board_width - 1)
+            message = ''
+            if not (1 <= I <= self.board_height):
+                m_mask = 'Wrong position indicies: the first index %d must be in range [1, %d]\n'
+                message += m_mask % (I, self.board_height)
+            if not (1 <= J <= self.board_width):
+                m_mask = 'Wrong position indicies: the second index %d must be in range [1, %d]\n'
+                message = m_mask % (J, self.board_width)
+
             raise GameBoardException(message)
 
     
@@ -285,13 +292,13 @@ class GameBoard(object):
                 strength = STATUS.WINNING
             elif count_of(STATUS.WINNING) > 0 or count_of(STATUS.WINNING_FINAL) > 0:
                 # Otherwise the enemy can winning if there is no moves to dead hit.
-                if count_of(STATUS.DEAD_HIT) == 0:
+                if count_of(STATUS.DRAW) == 0:
                     strength = STATUS.LOSING
                 else:
-                    strength = STATUS.DEAD_HIT
+                    strength = STATUS.DRAW
             else:
                 # If there are no moves to winning someone - dead hit
-                strength = STATUS.DEAD_HIT
+                strength = STATUS.DRAW
 
             return strength
 
@@ -304,7 +311,7 @@ class GameBoard(object):
             print enemy_label, 'Player win'
         elif status[0] == STATUS.WINNING_FINAL:
             print player_label, 'Player win'
-        elif status[0] == STATUS.DEAD_HIT:
+        elif status[0] == STATUS.DRAW:
             print 'DRAW'
         else:
             print 'GAME'

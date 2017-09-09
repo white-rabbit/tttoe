@@ -3,7 +3,7 @@ from random import randint
 
 # internal imports:
 from utils import die, enum
-from gameboard import GameBoard, STATUS
+from gameboard import GameBoard, GameBoardException, STATUS
 
 
 PLAYER_TYPE = enum('ALIVE', 'AI')
@@ -15,18 +15,18 @@ class Player(object):
     def move(self, game_board):
         if self.player_type == PLAYER_TYPE.ALIVE:
             i, j = -1, -1
-            while not game_board.inside_board(i, j) or not game_board.empty_position(i, j):
-                i, j = [int(x) - 1 for x in raw_input("Enter coordinates: ").split()]
-                if game_board.empty_position(i, j):
-                    return (i, j)
-                else:
-                    index = game_board.index_position(i, j)
-                    m_mask = "Wrong position indicies: the label %s is already in the position (%d, %d)"
-                    message = m_mask % (game_board.position[index], i + 1, j + 1)
-                    print(message)
+            while True:
+                i, j = [int(x) for x in raw_input("Enter coordinates: ").split()]
+                try:
+                    game_board.update_position(i, j)
+                    break
+                except GameBoardException as GBE:
+                    print GBE.message
+
         elif self.player_type == PLAYER_TYPE.AI:
             next_position = self.AI_next_position(game_board)
-            return self.move_to(game_board, next_position)
+            i,j = self.move_to(game_board, next_position)
+            game_board.update_position(i + 1, j + 1)
         else:
             raise PlayerException('Unknown type of player')
 
@@ -76,8 +76,8 @@ class Player(object):
                     return available_positions[strength][random_index]
 
             ret = None
-            if strength == STATUS.DEAD_HIT:
-                ret = random_mask(STATUS.DEAD_HIT)
+            if strength == STATUS.DRAW:
+                ret = random_mask(STATUS.DRAW)
             elif strength == STATUS.WINNING or strength == STATUS.WINNING_FINAL:
                 mask = random_mask(STATUS.LOSING)
                 ret = mask if mask is not None else random_mask(STATUS.LOSING_FINAL)  
