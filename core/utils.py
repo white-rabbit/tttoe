@@ -21,5 +21,7 @@ def memoized_by_uid(some_class_method):
         else:
             value = some_class_method(self, *args, **kwargs)
             memory[uid] = value
+            if len(memory) % 100 == 0:
+                print len(memory)
             return value
     return wrapped

@@ -1,6 +1,6 @@
 from gameboard import GameBoard
-from player import Player, PLAYER_TYPE
-
+from player import Player, PlayerException, PLAYER_TYPE
+from utils import die
 
 class TicTacToeException(Exception):
     def __init__(self, message):
@@ -16,11 +16,14 @@ class TicTacToe(object):
         player_index = 0
         self.show()
         while not self.game_board.game_over():
-            self.players[player_index].move(self.game_board)
+            try : 
+                self.players[player_index].move(self.game_board)
+            except PlayerException:
+                die(PlayerException.message)
             player_index = (player_index + 1) % 2
             self.show()
 
-        self.game_board.status()
+        print(self.game_board.status())
                 
 
     def show(self):
@@ -29,9 +32,9 @@ class TicTacToe(object):
         """
         gb = self.game_board
         print ' -----'
-        for line_index in xrange(gb.board_height):
+        for line_index in xrange(gb.height):
             print '|',
-            print gb.position[line_index * gb.board_width: (line_index + 1) * gb.board_width],
+            print gb.position[line_index * gb.width: (line_index + 1) * gb.width],
             print '|'
         print ' -----'
 

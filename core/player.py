@@ -8,11 +8,22 @@ from gameboard import GameBoard, GameBoardException, STATUS
 
 PLAYER_TYPE = enum('ALIVE', 'AI')
 
+class PlayerException(Exception):
+    def __init__(self, message):
+        super(PlayerException, self).__init__(message)
+
 class Player(object):
     def __init__(self, player_type=PLAYER_TYPE.ALIVE):
         self.player_type = player_type
 
     def move(self, game_board):
+        """
+        Changes game board by making the current player move.
+        
+        Parameters
+        ----------
+        game_board (GameBoard) current state of game board.
+        """
         if self.player_type == PLAYER_TYPE.ALIVE:
             i, j = -1, -1
             while True:
@@ -30,17 +41,31 @@ class Player(object):
         else:
             raise PlayerException('Unknown type of player')
 
-    def move_to(self, game_board, to_position):
+    def move_to(self, game_board, new_position):
+        """
+        Calculates the difference between game_board.position and new_position.game_board
+        If there is some way from game_board.position to new position by one move
+        the method returns corresponding coordinates.
+        
+        Parameters
+        ----------
+        game_board (GameBoard): current state of game board.
+        new_position     (str): string mask of new position.
+
+        Retruns
+        ---------- 
+        (int, int) coordinates of move (the first value from 1 to board.height, the second value from 1 to board.width)
+        """
         index = -1
         from_position = game_board.position
         for i in xrange(len(from_position)):
-            if from_position[i] != to_position[i]:
+            if from_position[i] != new_position[i]:
                 if index == -1:
                     index = i
                 else:
-                    raise PlayerException('It is not possible to move from %s to %s.' % (from_position, to_position))
+                    raise PlayerException('It is not possible to move from %s to %s.' % (from_position, new_position))
         if index != -1:
-            return index / game_board.board_width, index % game_board.board_width
+            return index / game_board.width, index % game_board.width
 
 
     def AI_next_position(self, game_board):
@@ -53,7 +78,7 @@ class Player(object):
         
         Returns
         ----------
-        (int) next state for the player or -1 if there is no moves from the current position.
+        (str) the next position of the game board including the current player move.
         """
         position = game_board.position       
         player_label = game_board.player_label(position)
@@ -91,16 +116,14 @@ class Player(object):
 def main():
     gb = GameBoard(3, 3)
     player_1 = Player(PLAYER_TYPE.AI)
-    player_2 = Player(PLAYER_TYPE.ALIVE)
+    player_2 = Player(PLAYER_TYPE.AI)
 
     for i in xrange(9):
-        i, j = player_1.move(gb)
-        gb.update_position(i, j)
+        player_1.move(gb)
         print gb.position
         if gb.game_over():
             break
-        i, j = player_2.move(gb)
-        gb.update_position(i, j)
+        player_2.move(gb)
         print gb.position
         if gb.game_over():
             break
