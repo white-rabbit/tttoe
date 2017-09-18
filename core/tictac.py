@@ -1,5 +1,5 @@
 from gameboard import GameBoard
-from player import Player, PlayerException, PLAYER_TYPE
+from player import Player, AI, PlayerException
 from utils import die
 
 class TicTacToeException(Exception):
@@ -8,35 +8,40 @@ class TicTacToeException(Exception):
 
 
 class TicTacToe(object):
-    def __init__(self, board, player1, player2):
+    def __init__(self, board, player1, player2, show_callback = None):
         self.players = [player1, player2]
         self.game_board = board
+        self.show_info = show_callback if show_callback is not None else self.text_show
 
-    def text_play(self):
+    def play(self):
         player_index = 0
-        self.show()
+        self.show_info()
         while not self.game_board.game_over():
-            try : 
-                self.players[player_index].move(self.game_board)
-            except PlayerException:
-                die(PlayerException.message)
+            self.players[player_index].move(self.game_board)
+            self.show_info()
             player_index = (player_index + 1) % 2
-            self.show()
 
-        print(self.game_board.status())
-                
+        self.show_info(game_over = True)
 
-    def show(self):
+    def text_show(self, game_over = False):
         """
         The text output for the current position.
         """
-        gb = self.game_board
-        print ' -----'
-        for line_index in xrange(gb.height):
-            print '|',
-            print gb.position[line_index * gb.width: (line_index + 1) * gb.width],
-            print '|'
-        print ' -----'
+        if not game_over:
+            gb = self.game_board
+            print(' -----')
+            for line_index in xrange(gb.height):
+                print '|',
+                print gb.position[line_index * gb.width: (line_index + 1) * gb.width],
+                print '|'
+            print(' -----')
+        else:
+            print(self.game_board.status())
+
+
+    def game_over(self):
+        return self.game_board.game_over()
+
 
 def main():
     width, height = -1, -1
@@ -45,10 +50,10 @@ def main():
         height, width = [int(x) for x in raw_input("Enter height and width of game board: ").split()]
 
     gb = GameBoard(height, width)
-    p1 = Player(PLAYER_TYPE.AI)
-    p2 = Player(PLAYER_TYPE.ALIVE)
+    p1 = Player()
+    p2 = AI()
     ttoe = TicTacToe(gb, p1, p2)
-    ttoe.text_play()
+    ttoe.play()
 
 if __name__=='__main__':
     main()

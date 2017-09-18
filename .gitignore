@@ -3,7 +3,4 @@ core/gameboard.pyc
 core/player.pyc
 core/utils.pyc
 core/tictac.pyc
-core/dump/3_3_dump.pkl
-core/dump/3_4_dump.pkl
 core/dump/4_4_dump.pkl
-core/dump/4_3_dump.pkl

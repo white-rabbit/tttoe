@@ -1,6 +1,9 @@
 # some special functions for debugging
 import sys
 
+
+add = lambda a, b : a + b
+
 def die(message):
     print(message)
     sys.exit()

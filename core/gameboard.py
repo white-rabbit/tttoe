@@ -43,6 +43,7 @@ class GameBoard(object):
         self.eq_permutations = self.__equivalent_permutations()
         # parametrized memoization or dumped strategy
         self.cur_dir = dirname(abspath(__file__))
+
         dump_path = join(self.cur_dir, join('dump','%d_%d_dump.pkl' % (height, width)))
         memo_dump = dump_path if exists(dump_path) else None
         self.position_strength = self.memoized(self.position_strength, memo_dump = memo_dump)
@@ -126,8 +127,6 @@ class GameBoard(object):
         return permutations
             
 
-
-
     def __status(self, position, stencils_filter = None):
         """
         Obvious information about some position by using stencils.
@@ -194,7 +193,6 @@ class GameBoard(object):
             else:
                 strength_for_current_player = STATUS.LOSING_FINAL
         else:
-            print position
             strength_for_current_player = STATUS.IMPOSSIBLE
 
         if strength_for_current_player == STATUS.IMPOSSIBLE:
@@ -224,26 +222,11 @@ class GameBoard(object):
         else:
             raise GameBoardException('Position is not possible. X label count = %d and O label count = %d.' % (count_X, count_O))
 
-    def update_position(self, I, J):
-        """
-        Update position on game board.
-
-        Parameters
-        ----------
-        I  (int):            the first coordinate (from 1 to height).
-        J  (int):            the second coordinate (from 1 to width).
-        player_label (str) : the label of the player
-        """
+    def label(self, I, J):
         i, j = I - 1, J - 1
         if 0 <= i < self.height and 0 <= j < self.width:
             index = i * self.width + j
-            player_label = self.player_label(self.position)
-            if self.position[index] == ' ':
-                self.position = self.position[:index] + player_label + self.position[index + 1:]
-            else:
-                m_mask = "Wrong position indicies: the label %s is already in the position (%d, %d)"
-                message = m_mask % (self.position[index], I, J)
-                raise GameBoardException(message)
+            return self.position[index]
         else:
             message = ''
             if not (1 <= I <= self.height):
@@ -255,7 +238,27 @@ class GameBoard(object):
 
             raise GameBoardException(message)
 
-    
+    def update_position(self, I, J):
+        """
+        Update position on game board.
+
+        Parameters
+        ----------
+        I  (int):            the first coordinate (from 1 to height).
+        J  (int):            the second coordinate (from 1 to width).
+        player_label (str) : the label of the player
+        """
+        i, j = I - 1, J - 1
+        index = i * self.width + j
+        if self.label(I, J) == ' ':            
+            
+            player_label = self.player_label(self.position)
+            self.position = self.position[:index] + player_label + self.position[index + 1:]
+        else:
+            m_mask = "Wrong position indicies: the label %s is already in the position (%d, %d)"
+            message = m_mask % (self.position[index], I, J)
+            raise GameBoardException(message)
+        
         
     def unique_id(self, position):
         """ 
@@ -317,6 +320,8 @@ class GameBoard(object):
             raise GameBoard(message)
         return positions
 
+
+
     def position_strength(self, position, stencils_filter = None):
         """
         Position strength for the player which moved from current position.
@@ -340,6 +345,7 @@ class GameBoard(object):
         else:
             # Otherwise we must to check all available positions.
             available_positions = self.available_positions(position, stencils_filter = stencils_filter)
+
             def count_of(strength_value):
                 if strength_value in available_positions:
                     return len(available_positions[strength_value])
@@ -351,7 +357,7 @@ class GameBoard(object):
                 # If there are some moves to the enemy losing, this position is winning.
                 strength = STATUS.WINNING
             elif count_of(STATUS.WINNING) > 0 or count_of(STATUS.WINNING_FINAL) > 0:
-                # Otherwise the enemy can winning if there is no moves to dead hit.
+                # Otherwise the enemy can winning if there is no moves to draw.
                 if count_of(STATUS.DRAW) == 0:
                     strength = STATUS.LOSING
                 else:
@@ -408,6 +414,35 @@ class GameBoard(object):
         with open(fname, 'rb') as f:
             return pickle.load(f)
 
+    def winning_indicies(self):
+        # indicies of labels in LABELS global variable
+        E_IND, X_IND, O_IND = LABELS.index(E_LABEL), LABELS.index(X_LABEL), LABELS.index(O_LABEL)
+        position = self.position
+        winning_stencils = []
+        for stencil in self.stencils:        
+            label_count = [0, 0, 0]
+            # The count of every kind labels calculation for the current stencil.
+            for index in stencil:
+                label_index = LABELS.index(position[index])
+                label_count[label_index] += 1
+
+            if label_count[X_IND] != 0 and label_count[O_IND] != 0:
+                # 'X' and 'O' labels inside this stencil
+                pass
+            elif label_count[X_IND] != 0 and label_count[E_IND] == 0:
+                # if count of an empty labels is zero - X player win.
+                winning_stencils.append(stencil)
+            elif label_count[O_IND] != 0 and label_count[E_IND] == 0:
+                # Similarly.
+                winning_stencils.append(stencil)
+
+        winning_indicies = []
+        coordinates_2d = [(i + 1, j +1) for i in xrange(self.height) for j in xrange(self.width)]
+        
+        for ws in winning_stencils:
+            winning_indicies.append(map(lambda x : coordinates_2d[x], ws))
+
+        return winning_indicies
 
     def status(self):
         """
@@ -437,9 +472,9 @@ class GameBoard(object):
             return status[0] in [STATUS.LOSING_FINAL, STATUS.WINNING_FINAL]
 
 def main():
-    for w, h in [(3,3), (3, 4), (4, 3), (4, 4)]:
-        gb = GameBoard(w, h)
-        print 'Game tree calculation for board size', w, h
+    for w, h in [(3,3), (3, 4), (4, 3)]:
+        gb = GameBoard(h, w)
+        print 'Game tree calculation for board size', h, w
         print 'It may takes a several minutes... Please wait.'
 	
         from time import time
