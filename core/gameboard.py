@@ -415,6 +415,13 @@ class GameBoard(object):
             return pickle.load(f)
 
     def winning_indicies(self):
+        """
+        The function generates a list of winning indicies 
+        (a labes in the winning indicies fillfull some stencil).
+        Returns
+        -----------
+        (list) list of winning coordinates in 2d.
+        """
         # indicies of labels in LABELS global variable
         E_IND, X_IND, O_IND = LABELS.index(E_LABEL), LABELS.index(X_LABEL), LABELS.index(O_LABEL)
         position = self.position
@@ -437,7 +444,7 @@ class GameBoard(object):
                 winning_stencils.append(stencil)
 
         winning_indicies = []
-        coordinates_2d = [(i + 1, j +1) for i in xrange(self.height) for j in xrange(self.width)]
+        coordinates_2d = [(i + 1, j + 1) for i in xrange(self.height) for j in xrange(self.width)]
         
         for ws in winning_stencils:
             winning_indicies.append(map(lambda x : coordinates_2d[x], ws))
@@ -446,7 +453,7 @@ class GameBoard(object):
 
     def status(self):
         """
-        The status of the current game board position.self
+        The status of the current game board position.
         Returns
         -----------
         (str) text description of current position
@@ -456,15 +463,21 @@ class GameBoard(object):
         enemy_label = 'X' if player_label == 'O' else 'O'
 
         if status[0] == STATUS.LOSING_FINAL:
-            return enemy_label + ' player win'
+            return enemy_label + ' player wins'
         elif status[0] == STATUS.WINNING_FINAL:
-            return player_label + ' player win'
+            return player_label + ' player wins'
         elif status[0] == STATUS.DRAW:
-            return 'DRAW'
+            return 'Draw.'
         else:
-            return 'GAME'
+            return 'Game...'
 
     def game_over(self):
+        """
+        Game over checking.
+        Returns
+        -----------
+        (bool) did the game over?
+        """
         if self.position.count(' ') == 0:
             return True
         else:

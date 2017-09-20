@@ -8,26 +8,42 @@ class TicTacToeException(Exception):
 
 
 class TicTacToe(object):
+    """
+    Main class of game process.
+    """
     def __init__(self, board, player1, player2, show_callback = None):
+        """
+        Player construction.
+
+        Parameters
+        ----------
+        board(GameBoard): initial state of a game board.
+        player1(Player): the first player
+        player2(Player): the second player
+        show_callback(callable): is a function or class method for game interface update after some player moves.
+        """
         self.players = [player1, player2]
         self.game_board = board
         self.show_info = show_callback if show_callback is not None else self.text_show
 
     def play(self):
+        """
+        Run the game.
+        """
         player_index = 0
         self.show_info()
-        while not self.game_board.game_over():
+        while not self.game_over():
             self.players[player_index].move(self.game_board)
             self.show_info()
             player_index = (player_index + 1) % 2
 
-        self.show_info(game_over = True)
+        self.show_info()
 
-    def text_show(self, game_over = False):
+    def text_show(self):
         """
         The text output for the current position.
         """
-        if not game_over:
+        if not self.game_board.game_over():
             gb = self.game_board
             print(' -----')
             for line_index in xrange(gb.height):
@@ -40,6 +56,9 @@ class TicTacToe(object):
 
 
     def game_over(self):
+        """
+        Game over checking.
+        """
         return self.game_board.game_over()
 
 

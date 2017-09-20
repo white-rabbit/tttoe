@@ -13,9 +13,19 @@ class PlayerException(Exception):
 
 class Player(object):
     def __init__(self, interface_callback = None):
+        """
+        Player construction.
+
+        Parameters
+        ----------
+        inteface_callback(callable): is a function or class method that returns coordinates for player move.
+        """
         self.__next_position = interface_callback if (interface_callback is not None) else self.__console_input
 
     def __console_input(self, game_board):
+        """
+        Default console input.
+        """
         while True:
             try:
                 i, j = [int(x) for x in raw_input("Enter coordinates: ").split()]
@@ -31,7 +41,7 @@ class Player(object):
         
         Parameters
         ----------
-        game_board (GameBoard) current state of game board.
+        game_board (GameBoard): current state of game board.
         """
         while True:
             try:
@@ -48,6 +58,12 @@ class AI(Player):
 
 
     def __AI_move(self, game_board):
+        """
+        The next position by AI.
+        Returns
+        ---------
+        (int, int) a tuple of coordinates.
+        """
         best_pos = self.__AI_next_position(game_board)
         return self.__move_to(game_board, best_pos)
         
@@ -80,12 +96,24 @@ class AI(Player):
 
 
     def __dummy_prophet(self, gameboard, available_positions):
+        """
+        This function for choosing move when current position is losing.
+        
+        Parameters
+        ----------
+        gameboard (GameBoard): current state of the game board.
+        available_positions (dict): available positions combined by their strength value.
+
+        Retruns
+        ---------- 
+        (int, int) coordinates of move (the first value from 1 to board.height, the second value from 1 to board.width)
+        """
         strength = 0
         best = None
         goodness = 0
         positions = reduce(add, map(lambda x : available_positions[x], available_positions))
         for pos in positions:
-            if best == None : best = pos
+            if best is None : best = pos
             avpos = gameboard.available_positions(pos)
 
             def count_of(strength_value):
@@ -145,18 +173,11 @@ class AI(Player):
 
 def main():
     gb = GameBoard(3, 3)
-    player_1 = Player(PLAYER_TYPE.AI)
-    player_2 = Player(PLAYER_TYPE.AI)
+    player_2 = AI()
+    player_2.move(gb)
+    player_2.move(gb)
 
-    for i in xrange(9):
-        player_1.move(gb)
-        print gb.position
-        if gb.game_over():
-            break
-        player_2.move(gb)
-        print gb.position
-        if gb.game_over():
-            break
+    print gb.position
 
 
 if __name__ == '__main__':

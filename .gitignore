@@ -4,3 +4,5 @@ core/player.pyc
 core/utils.pyc
 core/tictac.pyc
 core/dump/4_4_dump.pkl
+qtictac.pyc
+core/__init__.pyc
