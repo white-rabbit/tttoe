@@ -5,7 +5,7 @@ This Python code realized simple game - tic-tac-toe.
 
 Python-2.7...
 
-[PyQt5]<https://pypi.python.org/pypi/PyQt5> if you want to use Qt based graphical interface.
+[PyQt5](https://pypi.python.org/pypi/PyQt5) if you want to use Qt based graphical interface.
 
 ## Running
 
