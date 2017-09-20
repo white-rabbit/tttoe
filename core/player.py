@@ -2,14 +2,15 @@
 from random import randint
 
 # internal imports:
-from utils import die, enum, add
+from utils import die, enum, add, count_of
 from gameboard import GameBoard, GameBoardException, STATUS
 
+
+MAX_SEARCHING_DEPTH = 5
 
 class PlayerException(Exception):
     def __init__(self, message):
         super(PlayerException, self).__init__(message)
-
 
 class Player(object):
     def __init__(self, interface_callback = None):
@@ -108,23 +109,44 @@ class AI(Player):
         ---------- 
         (int, int) coordinates of move (the first value from 1 to board.height, the second value from 1 to board.width)
         """
-        strength = 0
-        best = None
-        goodness = 0
-        positions = reduce(add, map(lambda x : available_positions[x], available_positions))
-        for pos in positions:
-            if best is None : best = pos
-            avpos = gameboard.available_positions(pos)
+        max_depth = 0
+        best_pos = None
 
-            def count_of(strength_value):
-                if strength_value in avpos:
-                    return len(avpos[strength_value])
-                else:
-                    return 0
-            if count_of(STATUS.LOSING_FINAL) == 0:
-                best = pos
-            
-        return best
+        for pos in available_positions[STATUS.WINNING]:
+            cur_depth = 1 + self.__shortest_game_steps(gameboard, pos, 1)
+            if cur_depth > max_depth:
+                best_pos = pos
+                max_depth = cur_depth
+        return best_pos
+
+    def __shortest_game_steps(self, gameboard, pos, cur_depth):
+        """
+        The current player wants to minimize game steps from position pos.
+        """
+        if cur_depth == MAX_SEARCHING_DEPTH: return 0
+        avpos = gameboard.available_positions(pos)
+        lf_count = count_of(avpos, STATUS.LOSING_FINAL)
+        if lf_count > 0:
+            # this trick for minimization the enemy winning positions
+            return 1 if lf_count == 1 else 0 
+        else:
+            min_rec_depth = 1e9
+            for next_pos in avpos[STATUS.LOSING]:
+                min_rec_depth = min(min_rec_depth, 1 + self.__longest_game_steps(gameboard, next_pos, cur_depth + 1))
+            return min_rec_depth
+
+
+    def __longest_game_steps(self, gameboard, pos, cur_depth):
+        """
+        The current player wants to maximize game staps from position pos.
+        The position 'pos' is actually losing for current player!!
+        """
+        if cur_depth == MAX_SEARCHING_DEPTH: return 0
+        avpos = gameboard.available_positions(pos)
+        max_rec_depth = 0
+        for next_pos in avpos[STATUS.WINNING]:
+            max_rec_depth = max(max_rec_depth, 1 + self.__shortest_game_steps(gameboard, next_pos, cur_depth + 1))
+        return max_rec_depth
 
 
     def __AI_next_position(self, game_board):

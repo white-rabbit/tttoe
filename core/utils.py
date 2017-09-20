@@ -8,7 +8,6 @@ def die(message):
     print(message)
     sys.exit()
 
-
 # Kludge for enums in Python2
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -28,3 +27,7 @@ def memoized_by_uid(some_class_method):
                 print len(memory)
             return value
     return wrapped
+
+# count of values in dictionary[key]
+def count_of(dictionary, key):
+    return len(dictionary[key]) if key in dictionary else 0        
