@@ -15,7 +15,12 @@ from PyQt5.QtWidgets import QDesktopWidget, QDialog, QAction, qApp
 from qtictac import TicTacWidget, ICONS_PATH
 
 # constants
+# icons
 MAIN_WINDOW_ICON_PATH = join(ICONS_PATH, 'tttoe_ico.png')
+EXIT_ICON_PATH = join('ico', 'exit.png')
+NEW_3x3_ICON_PATH = join('ico', 'new.png')
+NEW_3x4_ICON_PATH = join('ico', 'new_3x4.png')
+
 
 class QTicTacToe(QMainWindow):
     """
@@ -33,32 +38,32 @@ class QTicTacToe(QMainWindow):
 
         # Actions
         # exit
-        exitAction = QAction(QIcon(join('ico', 'exit.png')), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(qApp.quit)
+        exit_action = QAction(QIcon(EXIT_ICON_PATH), '&Exit', self)
+        exit_action.setShortcut('Ctrl+Q')
+        exit_action.setStatusTip('Exit application')
+        exit_action.triggered.connect(qApp.quit)
         # new game on a 3x3 game board
-        newgame33Action = QAction(QIcon(join('ico', 'new.png')), '&New 3x3', self)
-        newgame33Action.setShortcut('Ctrl+N')
-        newgame33Action.setStatusTip('3x3')
-        newgame33Action.triggered.connect(self.new_game(3, 3))
+        new_3x3_action = QAction(QIcon(NEW_3x3_ICON_PATH), '&New 3x3', self)
+        new_3x3_action.setShortcut('Ctrl+N')
+        new_3x3_action.setStatusTip('3x3')
+        new_3x3_action.triggered.connect(self.new_game(3, 3))
         # new game on a 3x4 game board (BONUS)
-        newgame34Action = QAction(QIcon(join('ico', 'new_3x4.png')), '&New 3x4', self)
-        newgame34Action.setShortcut('Ctrl+B')
-        newgame34Action.setStatusTip('3x4')
-        newgame34Action.triggered.connect(self.new_game(3, 4))
+        new_3x4_action = QAction(QIcon(NEW_3x4_ICON_PATH), '&New 3x4', self)
+        new_3x4_action.setShortcut('Ctrl+B')
+        new_3x4_action.setStatusTip('3x4')
+        new_3x4_action.triggered.connect(self.new_game(3, 4))
         # Simple menubar
         menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(exitAction)
-        ticMenu = menubar.addMenu('&New')
-        ticMenu.addAction(newgame33Action)
-        ticMenu.addAction(newgame34Action)
+        file_menu = menubar.addMenu('&File')
+        file_menu.addAction(exit_action)
+        new_menu = menubar.addMenu('&New')
+        new_menu.addAction(new_3x3_action)
+        new_menu.addAction(new_3x4_action)
         # Simple toolbar
         self.toolbar = self.addToolBar('Exit')
-        self.toolbar.addAction(exitAction)
-        self.toolbar.addAction(newgame33Action)
-        self.toolbar.addAction(newgame34Action)
+        self.toolbar.addAction(exit_action)
+        self.toolbar.addAction(new_3x3_action)
+        self.toolbar.addAction(new_3x4_action)
 
         self.statusBar().showMessage('')
         self.setGeometry(300, 300, 300, 300)
@@ -93,7 +98,6 @@ class QTicTacToe(QMainWindow):
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

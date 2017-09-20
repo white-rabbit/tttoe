@@ -1,7 +1,7 @@
 from os.path import abspath, dirname, exists, join
 
 from bifilter import BinaryFilter
-from utils import enum, memoized_by_uid
+from utils import enum, memoized_by_uid, add
 
 import pickle
 
@@ -102,8 +102,6 @@ class GameBoard(object):
         rows = [identity[li * bw: (li + 1) * bw] for li in xrange(bh)]
         #mirrored rows
         mirrored_rows = [r[::-1] for r in rows]
-
-        add = lambda a, b : a + b
 
         # top-down inversion
         permutations.append(reduce(add, rows[::-1]))
@@ -276,7 +274,6 @@ class GameBoard(object):
         # list of equivalent positions in ternary notations
         equivalent_positions = [ternary]
 
-        add = lambda a, b : a + b
         get_symbol = lambda i : ternary[i]
         # makes list of equivalent positions by symbols permutation
         for p in self.eq_permutations:

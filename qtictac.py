@@ -18,6 +18,7 @@ from PyQt5.QtCore import QThread
 from core.tictac import TicTacToe
 from core.gameboard import GameBoard
 from core.player import Player, AI
+from core.utils import add
 
 
 # constants
@@ -164,7 +165,6 @@ class TicTacWidget(QWidget):
         if gb.game_over():
             enabled_positions = gb.winning_indicies()
             if enabled_positions:
-                add = lambda a, b : a + b
                 enabled_positions = set(reduce(add, enabled_positions))
             for i in xrange(gb.height):
                 for j in xrange(gb.width):

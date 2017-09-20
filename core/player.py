@@ -2,7 +2,7 @@
 from random import randint
 
 # internal imports:
-from utils import die, enum, add, count_of
+from utils import die, enum, count_of
 from gameboard import GameBoard, GameBoardException, STATUS
 
 
